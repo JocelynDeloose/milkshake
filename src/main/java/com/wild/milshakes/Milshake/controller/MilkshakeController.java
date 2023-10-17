@@ -2,16 +2,16 @@ package com.wild.milshakes.Milshake.controller;
 
 import com.wild.milshakes.Milshake.entity.Milkshake;
 import com.wild.milshakes.Milshake.repository.MilkshakeRepository;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.ModelAttribute;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.*;
+import org.yaml.snakeyaml.events.Event;
 
+import java.util.List;
 import java.util.Optional;
 
-@Controller
+@RestController
 public class MilkshakeController {
 
     private final MilkshakeRepository repository;
@@ -23,44 +23,61 @@ public class MilkshakeController {
 
 
     @GetMapping("/milkshakes")
-    public String getAll(Model model) {
+    public List<Milkshake> getAll() {
 
-        model.addAttribute("milkshakes", repository.findAll());
-
-        return "milkshakes";
+        return this.repository.findAll();
     }
 
     @GetMapping("milkshake")
-    public String getMilkshake(Model model,
-                               @RequestParam(required = false) Long id) {
-        Milkshake milkshake = new Milkshake();
-        if (id != null) {
+    public ResponseEntity<Milkshake> getMilkshake(@RequestParam(required = false) Long id) {
 
-            Optional<Milkshake> optionalMilkshake = repository.findById(id);
-            if (optionalMilkshake.isPresent()) {
-                milkshake = optionalMilkshake.get();
-            }
+        Optional<Milkshake> optionalMilkshake = repository.findById(id);
+
+        if (optionalMilkshake.isPresent()) {
+
+            Milkshake milkshake = optionalMilkshake.get();
+
+            return ResponseEntity.ok().body(milkshake);
         }
-        model.addAttribute("milkshake", milkshake);
 
-        return "milkshake";
+        return ResponseEntity.notFound().build();
     }
 
 
     @PostMapping("/milkshake")
-    public String postMilkshake(@ModelAttribute Milkshake milkshake) {
+    public Milkshake postMilkshake(@RequestBody Milkshake milkshake) {
 
-        repository.save(milkshake);
+        return this.repository.save(milkshake);
 
-        return "redirect:/milkshakes";
+
     }
 
-    @GetMapping("/milkshake/delete")
-    public String deleteMilkshake(@RequestParam Long id) {
+    @PutMapping("/milkshake/{id}")
+    public ResponseEntity<Milkshake> update(@PathVariable Long id, @RequestBody Milkshake uptadeMilkshake) {
+        Optional<Milkshake> optionalMilkshake = repository.findById(id);
+
+        if (optionalMilkshake.isPresent()) {
+
+            Milkshake milkshake = optionalMilkshake.get();
+
+            milkshake.setName(uptadeMilkshake.getName());
+            milkshake.setQuantity(uptadeMilkshake.getQuantity());
+            milkshake.setMainIngredient(uptadeMilkshake.getMainIngredient());
+
+
+            return ResponseEntity.ok(repository.save(milkshake));
+        }
+
+            return ResponseEntity.notFound().build();
+
+    }
+
+
+    @DeleteMapping("milkshake/{id}")
+    public boolean delete(@PathVariable Long id) {
 
         repository.deleteById(id);
-
-        return "redirect:/milkshakes";
+        return true;
     }
 
 }
